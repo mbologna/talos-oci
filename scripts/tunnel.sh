@@ -29,6 +29,9 @@ region() {
   if [[ -n "${OCI_REGION:-}" ]]; then echo "$OCI_REGION"; else sed -n 's/^region *= *//p' ~/.oci/config | head -n 1; fi
 }
 
+# listening <port>: something accepts connections on 127.0.0.1:<port>.
+listening() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+
 up() {
   [[ -r "$SSH_KEY" && -r "$SSH_KEY.pub" ]] || die "SSH key pair $SSH_KEY(.pub) not found (set SSH_KEY)"
   local bastion lb
@@ -36,7 +39,7 @@ up() {
   lb=$(out internal_lb_ip)
   mkdir -p "$STATE_DIR"
   for port in "${PORTS[@]}"; do
-    if [[ -f "$STATE_DIR/$port.pid" ]] && kill -0 "$(cat "$STATE_DIR/$port.pid")" 2>/dev/null; then
+    if listening "$port"; then
       log "localhost:$port already forwarded"
       continue
     fi
@@ -47,25 +50,29 @@ up() {
       --wait-for-state SUCCEEDED --query 'data.resources[0].identifier' --raw-output)
     [[ -n "$session" ]] || die "could not create a Bastion session for port $port"
     echo "$session" > "$STATE_DIR/$port.session"
-    # The session becomes usable a few seconds after it turns ACTIVE.
     for _ in $(seq 1 30); do
       [[ "$(oci bastion session get --session-id "$session" --query 'data."lifecycle-state"' --raw-output)" == "ACTIVE" ]] && break
       sleep 5
     done
+    # An ACTIVE session can still refuse the key for a few seconds: retry.
     # OCI Bastion offers only AES-CTR ciphers, which hardened ssh configs often
-    # leave out; the + adds them to OpenSSH's defaults for this connection.
-    ssh -i "$SSH_KEY" -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o Ciphers=+aes256-ctr \
-      -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$STATE_DIR/known_hosts" \
-      -L "127.0.0.1:$port:$lb:$port" -p 22 "$session@host.bastion.$(region).oci.oraclecloud.com" &
-    echo $! > "$STATE_DIR/$port.pid"
-    log "localhost:$port → $lb:$port (session ${session: -8})"
-  done
-  # Wait until both local ports accept connections.
-  for port in "${PORTS[@]}"; do
-    for _ in $(seq 1 30); do
-      (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && break
-      sleep 2
+    # leave out (the + adds them to OpenSSH's defaults), and IdentitiesOnly
+    # keeps an agent's other keys from using up the server's attempts.
+    for _ in $(seq 1 6); do
+      ssh -i "$SSH_KEY" -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+        -o Ciphers=+aes256-ctr -o IdentitiesOnly=yes \
+        -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$STATE_DIR/known_hosts" \
+        -L "127.0.0.1:$port:$lb:$port" -p 22 "$session@host.bastion.$(region).oci.oraclecloud.com" &
+      echo $! > "$STATE_DIR/$port.pid"
+      for _ in $(seq 1 10); do
+        listening "$port" && break 2
+        kill -0 "$(cat "$STATE_DIR/$port.pid")" 2>/dev/null || break
+        sleep 2
+      done
+      sleep 5
     done
+    listening "$port" || die "the port forward for $port did not come up"
+    log "localhost:$port → $lb:$port (session ${session: -8})"
   done
 }
 
@@ -85,7 +92,7 @@ down() {
 
 status() {
   for port in "${PORTS[@]}"; do
-    if [[ -f "$STATE_DIR/$port.pid" ]] && kill -0 "$(cat "$STATE_DIR/$port.pid")" 2>/dev/null; then
+    if listening "$port"; then
       echo "localhost:$port up"
     else
       echo "localhost:$port down"
