@@ -39,6 +39,8 @@ data "talos_machine_configuration" "node" {
     templatefile("${path.module}/patches/common.yaml.tftpl", {
       lb_ip                = local.lb_ip
       private_cidr         = var.private_subnet_cidr
+      pod_cidr             = var.pod_cidr
+      service_cidr         = var.service_cidr
       installer_image      = local.installer_image
       ephemeral_max_size   = var.ephemeral_max_size
       talos_api_roles      = var.talos_api_access_roles

@@ -17,6 +17,7 @@ import re, sys
 src, dst = sys.argv[1], sys.argv[2]
 values = {
     "lb_ip": "10.0.1.5", "private_cidr": "10.0.1.0/24", "hostname": "server-0",
+    "pod_cidr": "10.244.0.0/16", "service_cidr": "10.96.0.0/12",
     "installer_image": "factory.talos.dev/oracle-installer/0000000000000000000000000000000000000000000000000000000000000000:v1.14.7",
     "ephemeral_max_size": "24GiB",
 }
