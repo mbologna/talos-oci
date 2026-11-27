@@ -161,7 +161,7 @@ variable "talos_api_access_namespaces" {
 
 variable "vcn_cidr" {
   type        = string
-  description = "VCN CIDR. Must not overlap the pod (10.244.0.0/16) or service (10.96.0.0/12) networks."
+  description = "VCN CIDR. Must not overlap pod_cidr or service_cidr."
   default     = "10.0.0.0/16"
 
   validation {
@@ -180,6 +180,28 @@ variable "private_subnet_cidr" {
   type        = string
   description = "Private subnet (nodes, internal load balancer, Bastion endpoint)."
   default     = "10.0.1.0/24"
+}
+
+variable "pod_cidr" {
+  type        = string
+  description = "Pod network (flannel). Talos's default; k3s uses 10.42.0.0/16, which keeps NetworkPolicies written for a k3s cluster valid."
+  default     = "10.244.0.0/16"
+
+  validation {
+    condition     = can(cidrhost(var.pod_cidr, 0))
+    error_message = "pod_cidr must be a valid CIDR."
+  }
+}
+
+variable "service_cidr" {
+  type        = string
+  description = "Service network. Talos's default; k3s uses 10.43.0.0/16."
+  default     = "10.96.0.0/12"
+
+  validation {
+    condition     = can(cidrhost(var.service_cidr, 0))
+    error_message = "service_cidr must be a valid CIDR."
+  }
 }
 
 variable "ingress_http_nodeport" {

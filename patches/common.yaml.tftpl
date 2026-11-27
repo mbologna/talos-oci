@@ -53,6 +53,13 @@ config:
   imageGCLowThresholdPercent: 55
 ---
 apiVersion: v1alpha1
+kind: KubeNetworkConfig
+podSubnets:
+  - ${pod_cidr}
+serviceSubnets:
+  - ${service_cidr}
+---
+apiVersion: v1alpha1
 kind: KubeFlannelCNIConfig
 backendType: vxlan
 backendPort: 4789
