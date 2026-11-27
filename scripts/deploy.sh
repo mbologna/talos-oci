@@ -16,7 +16,9 @@
 #
 # Env: TF_DIR (default ../example), TALOS_DIR (talosconfig and kubeconfig;
 # default ~/.talos/<cluster>), KEEP_IMAGE=true to keep the image, plus what
-# bootstrap-argocd.sh reads. The tofu backend and variables come from TF_DIR.
+# bootstrap-argocd.sh reads, and TALOS_VERSION / TALOS_EXTENSIONS when TF_DIR
+# overrides the module's talos_version / talos_extensions (import-image.sh).
+# The tofu backend and variables come from TF_DIR.
 # Requires: tofu, oci CLI, talosctl, kubectl, helm, qemu-img, curl, python3, ssh.
 set -euo pipefail
 

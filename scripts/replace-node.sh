@@ -6,7 +6,8 @@
 #   scripts/replace-node.sh server-1
 #
 # Env: TF_DIR (default ../example), MODULE (address of the module in TF_DIR,
-# default module.talos_oci), TALOSCONFIG (default ~/.talos/<cluster>/talosconfig).
+# default module.talos_oci), TALOSCONFIG (default ~/.talos/<cluster>/talosconfig),
+# TALOS_VERSION / TALOS_EXTENSIONS as for deploy.sh.
 # The Bastion tunnel must be up (scripts/tunnel.sh up).
 set -euo pipefail
 
