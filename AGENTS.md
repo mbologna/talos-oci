@@ -34,6 +34,7 @@ compute.tf        one oci_core_instance per node (fixed IP, user_data, IMDSv2 on
 talos.tf          Image Factory schematic, machine secrets, machine configs, talosconfig
 objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days)
 backup.tf         weekly boot-volume backups
+iam.tf            optional dynamic group + read-only policy on the backups bucket
 monitoring.tf     ONS topic, alarms, APM free-tier synthetic monitor (alert_email)
 bastion.tf        OCI Bastion for the port forwards
 checks.tf         free-allowance and user_data size checks
