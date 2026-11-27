@@ -154,7 +154,7 @@ variable "talos_api_access_roles" {
 variable "talos_api_access_namespaces" {
   type        = list(string)
   description = "Namespaces whose ServiceAccounts may use the Talos API."
-  default     = ["talos-backup", "tuppr-system"]
+  default     = ["talos-backup", "system-upgrade"]
 }
 
 # ── Network ───────────────────────────────────────────────────────────────────
