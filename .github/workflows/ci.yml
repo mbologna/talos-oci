@@ -1,0 +1,63 @@
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  # No paths filter on pull_request: the ruleset requires these checks, and a
+  # filtered-out PR would never report them and stay blocked.
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  terraform:
+    uses: mbologna/.github/.github/workflows/terraform-ci.yml@935e4a724ac131476dd6c3e5d141cbb1bb651a6d # main
+    with:
+      opentofu_version: "1.13.9"
+      enable_shellcheck: true
+      shellcheck_files: >-
+        scripts/import-image.sh
+        scripts/tunnel.sh
+        scripts/deploy.sh
+        scripts/bootstrap-argocd.sh
+        scripts/replace-node.sh
+        scripts/validate-machine-config.sh
+      example_dir: example
+    secrets: inherit
+
+  # The machine-config patches render into a valid cloud-mode config for the
+  # pinned Talos and Kubernetes versions, within OCI's user_data limit.
+  machine-config:
+    name: Talos machine config
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install talosctl (the version vars.tf pins)
+        run: |
+          set -euo pipefail
+          version=$(awk '/variable "talos_version"/,/^}/' vars.tf | sed -n 's/.*default *= *"\(v[0-9.]*\)".*/\1/p')
+          mkdir -p "$RUNNER_TEMP/bin" && cd "$RUNNER_TEMP"
+          base="https://github.com/siderolabs/talos/releases/download/${version}"
+          curl -fsSLO "$base/talosctl-linux-amd64"
+          curl -fsSL "$base/sha256sum.txt" | grep ' talosctl-linux-amd64$' | sha256sum -c -
+          install -m 0755 talosctl-linux-amd64 bin/talosctl
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Validate the rendered machine config
+        run: scripts/validate-machine-config.sh

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>mbologna/.github//renovate-config.json"],
+  "description": [
+    "Talos and Kubernetes versions in vars.tf are the versions of new clusters; running clusters are upgraded in-cluster (tuppr in the consumer's GitOps repo). Talos supports upgrades only between adjacent minor releases, so a minor bump is never grouped across two minors and never automerges; patches automerge after CI.",
+    "Kubernetes follows Talos: a Kubernetes minor needs the Talos minor that supports it, so both minors stay manual."
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions pinned in Terraform variables with a # renovate: comment on the line above the default.",
+      "managerFilePatterns": ["/(^|/)vars\\.tf$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[^\\s]+?))?\\s+default\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Versions pinned in scripts with a # renovate: comment on the line above.",
+      "managerFilePatterns": ["/(^|/)scripts/[^/]+\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-.]+?)(?: registryUrl=(?<registryUrl>[^\\s]+?))? depName=(?<depName>[^\\s]+?)\\s+[A-Z_]+=\"\\$\\{[A-Z_]+:-(?<currentValue>[^}]+)\\}\""
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Talos: patches automerge; one minor at a time, by hand.",
+      "matchDepNames": ["siderolabs/talos"],
+      "separateMultipleMinor": true,
+      "commitMessageTopic": "siderolabs/talos"
+    },
+    {
+      "matchDepNames": ["siderolabs/talos"],
+      "matchUpdateTypes": ["minor", "major"],
+      "automerge": false,
+      "addLabels": ["manual-review"]
+    },
+    {
+      "description": "Kubernetes: patches automerge; minors by hand, after the Talos minor that supports them.",
+      "matchDepNames": ["kubernetes/kubernetes"],
+      "separateMultipleMinor": true,
+      "commitMessageTopic": "kubernetes/kubernetes"
+    },
+    {
+      "matchDepNames": ["kubernetes/kubernetes"],
+      "matchUpdateTypes": ["minor", "major"],
+      "automerge": false,
+      "addLabels": ["manual-review"]
+    },
+    {
+      "description": "Providers: automerge after CI (the plan check shows the effect on the live deployment).",
+      "matchManagers": ["terraform"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    }
+  ]
+}
