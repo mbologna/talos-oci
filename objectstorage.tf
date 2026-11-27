@@ -23,6 +23,10 @@ resource "oci_objectstorage_object_lifecycle_policy" "backups" {
   namespace = data.oci_objectstorage_namespace.this.namespace
   bucket    = oci_objectstorage_bucket.backups.name
 
+  # IAM changes take a moment to propagate: a first apply can still fail here;
+  # apply again.
+  depends_on = [oci_identity_policy.object_storage_lifecycle]
+
   rules {
     name        = "purge-noncurrent-versions"
     action      = "DELETE"
