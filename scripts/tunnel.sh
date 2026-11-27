@@ -52,7 +52,9 @@ up() {
       [[ "$(oci bastion session get --session-id "$session" --query 'data."lifecycle-state"' --raw-output)" == "ACTIVE" ]] && break
       sleep 5
     done
-    ssh -i "$SSH_KEY" -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+    # OCI Bastion offers only AES-CTR ciphers, which hardened ssh configs often
+    # leave out; the + adds them to OpenSSH's defaults for this connection.
+    ssh -i "$SSH_KEY" -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o Ciphers=+aes256-ctr \
       -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$STATE_DIR/known_hosts" \
       -L "127.0.0.1:$port:$lb:$port" -p 22 "$session@host.bastion.$(region).oci.oraclecloud.com" &
     echo $! > "$STATE_DIR/$port.pid"
