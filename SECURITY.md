@@ -39,3 +39,6 @@ OCI provider), which belong upstream.
   encrypted, access-controlled backend; never commit it.
 - **NetworkPolicy enforcement fails open**: if the kube-network-policies container of the
   flannel DaemonSet stops, traffic is allowed until it restarts.
+- **Instance principal (opt-in, `instance_principal_backup_read`)**: the nodes may list the
+  backups bucket. Any process that reaches the metadata service can use that identity, so keep
+  pods away from `169.254.169.254:80` except the backup check that needs it.

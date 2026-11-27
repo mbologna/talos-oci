@@ -214,6 +214,12 @@ variable "enable_boot_volume_backups" {
   default     = true
 }
 
+variable "instance_principal_backup_read" {
+  type        = bool
+  description = "Let the nodes' instance principal list the backups bucket (a dynamic group and a read-only policy), for an in-cluster backup freshness check. Needs IAM rights in the tenancy root."
+  default     = false
+}
+
 variable "alert_email" {
   type        = string
   description = "Email for OCI Monitoring alarms (instance down, unhealthy NLB backends, failing uptime checks). null skips monitoring."
