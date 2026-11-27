@@ -1,0 +1,105 @@
+# Applied to every node. Rendered by talos.tf with templatefile().
+machine:
+  certSANs:
+    - ${lb_ip}
+    - 127.0.0.1
+cluster:
+  etcd:
+    advertisedSubnets:
+      - ${private_cidr}
+    # A1 control planes with 1 OCPU: longer timeouts ride out CPU and fsync
+    # stalls instead of turning them into leader elections.
+    extraArgs:
+      heartbeat-interval: "500"
+      election-timeout: "5000"
+---
+apiVersion: v1alpha1
+kind: KubeAPIServerConfig
+certExtraSANs:
+  - ${lb_ip}
+  - 127.0.0.1
+extraArgs:
+  max-requests-inflight: "200"
+  max-mutating-requests-inflight: "100"
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+nodeIP:
+  validSubnets:
+    - ${private_cidr}
+labels:
+  node-role.kubernetes.io/control-plane: ""
+# Every node is a control plane, so the control-plane taint is dropped:
+# workloads schedule on all three.
+taints: {}
+---
+apiVersion: v1alpha1
+kind: KubeletConfig
+config:
+  systemReserved:
+    cpu: 100m
+    memory: 512Mi
+  kubeReserved:
+    cpu: 100m
+    memory: 512Mi
+  evictionHard:
+    memory.available: 300Mi
+    nodefs.available: 5%
+    imagefs.available: 5%
+  imageGCHighThresholdPercent: 70
+  imageGCLowThresholdPercent: 55
+---
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+backendType: vxlan
+backendPort: 4789
+# NetworkPolicy enforcement (kube-network-policies, nftables): infra's
+# namespaces are default-deny.
+kubeNetworkPoliciesEnabled: true
+---
+apiVersion: v1alpha1
+kind: TimeSyncConfig
+ntp:
+  servers:
+    - 169.254.169.254
+---
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+allowedRoles:
+%{ for role in talos_api_roles ~}
+  - ${role}
+%{ endfor ~}
+allowedKubernetesNamespaces:
+%{ for ns in talos_api_namespaces ~}
+  - ${ns}
+%{ endfor ~}
+---
+# The boot volume is split: EPHEMERAL (container images, logs, etcd) is
+# capped, and the rest becomes the "longhorn" user volume at
+# /var/mnt/longhorn, Longhorn's data path on Talos. Talos mounts /var/mnt
+# into the kubelet, so no kubelet extra mount is needed, and Longhorn can't
+# fill the volume etcd lives on.
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+provisioning:
+  diskSelector:
+    match: system_disk
+  maxSize: ${ephemeral_max_size}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+provisioning:
+  diskSelector:
+    match: system_disk
+  minSize: 10GiB
+  grow: true
+---
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+installer:
+  image: ${installer_image}
+provisioning:
+  diskSelector:
+    match: disk.dev_path == "/dev/sda"

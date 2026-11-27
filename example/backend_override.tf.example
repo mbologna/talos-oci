@@ -1,0 +1,18 @@
+# Copy to backend_override.tf (gitignored) to keep the state in an OCI bucket
+# through its S3-compatible API. Create the bucket and a Customer Secret Key
+# outside this module; the state holds every cluster secret.
+terraform {
+  backend "s3" {
+    bucket                      = "my-tofu-state"
+    key                         = "talos-oci/terraform.tfstate"
+    region                      = "us-phoenix-1"
+    endpoints                   = { s3 = "https://<namespace>.compat.objectstorage.us-phoenix-1.oraclecloud.com" }
+    profile                     = "oci-tofu-state"
+    skip_region_validation      = true
+    skip_credentials_validation = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    skip_s3_checksum            = true
+    use_path_style              = true
+  }
+}

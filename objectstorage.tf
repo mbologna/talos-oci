@@ -1,0 +1,34 @@
+# One bucket for the cluster's off-site backups: etcd snapshots (talos-backup,
+# prefix etcd/) and Longhorn volume backups (prefix longhorn/). Writers use a
+# bucket-scoped Customer Secret Key managed outside this module.
+
+data "oci_objectstorage_namespace" "this" {
+  compartment_id = var.tenancy_ocid
+}
+
+resource "oci_objectstorage_bucket" "backups" {
+  compartment_id        = var.compartment_ocid
+  namespace             = data.oci_objectstorage_namespace.this.namespace
+  name                  = "${var.cluster_name}-backups"
+  access_type           = "NoPublicAccess"
+  versioning            = "Enabled"
+  object_events_enabled = false
+  freeform_tags         = local.common_tags
+}
+
+# Versioning protects against accidental deletes; noncurrent versions are
+# purged after 2 days so pruned backups stop counting against the free
+# Object Storage allowance.
+resource "oci_objectstorage_object_lifecycle_policy" "backups" {
+  namespace = data.oci_objectstorage_namespace.this.namespace
+  bucket    = oci_objectstorage_bucket.backups.name
+
+  rules {
+    name        = "purge-noncurrent-versions"
+    action      = "DELETE"
+    is_enabled  = true
+    target      = "previous-object-versions"
+    time_amount = 2
+    time_unit   = "DAYS"
+  }
+}
