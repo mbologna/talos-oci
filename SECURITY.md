@@ -38,7 +38,11 @@ OCI provider), which belong upstream.
 - **Terraform state holds every cluster secret** (`talos_machine_secrets`). Keep it in an
   encrypted, access-controlled backend; never commit it.
 - **NetworkPolicy enforcement fails open**: if the kube-network-policies container of the
-  flannel DaemonSet stops, traffic is allowed until it restarts.
+  flannel DaemonSet stops, traffic is allowed until it restarts. It also filters only pods whose
+  IP it has already added to its per-node set: a new pod's first second or so of traffic is not
+  filtered, so a pod built to read the metadata service at start-up can reach it (measured on
+  Talos 1.14.7). Closing that needs a node-level drop of pod traffic to `169.254.169.254`, which
+  in turn means no pod may rely on the instance principal (`instance_principal_backup_read`).
 - **Instance principal (opt-in, `instance_principal_backup_read`)**: the nodes may list the
   backups bucket. Any process that reaches the metadata service can use that identity, so keep
   pods away from `169.254.169.254:80` except the backup check that needs it.
