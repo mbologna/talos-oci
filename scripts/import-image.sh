@@ -6,6 +6,11 @@
 #   scripts/import-image.sh [--version v1.14.7] [--extensions "siderolabs/iscsi-tools ..."]
 #                           [--compartment OCID] [--bucket NAME] [--keep-object]
 #
+# The version and extensions default to TALOS_VERSION and TALOS_EXTENSIONS from
+# the environment, else to the module's vars.tf defaults. A root module that
+# sets talos_version or talos_extensions exports the same values, so deploy.sh
+# and replace-node.sh import the image its machine config expects.
+#
 # Steps:
 #   1. Registers the schematic (the extensions) with the Image Factory: the ID is
 #      a content hash, the same one the talos provider computes in talos.tf.
@@ -24,8 +29,8 @@
 # Requires: oci CLI (configured), curl, python3, qemu-img.
 set -euo pipefail
 
-VERSION=""
-EXTENSIONS=""
+VERSION="${TALOS_VERSION:-}"
+EXTENSIONS="${TALOS_EXTENSIONS:-}"
 COMPARTMENT_ID="${COMPARTMENT_OCID:-}"
 BUCKET_NAME="talos-image-import"
 KEEP_OBJECT=false
@@ -42,7 +47,7 @@ while [[ $# -gt 0 ]]; do
     --compartment) COMPARTMENT_ID="$2"; shift 2 ;;
     --bucket) BUCKET_NAME="$2"; shift 2 ;;
     --keep-object) KEEP_OBJECT=true; shift ;;
-    -h | --help) sed -n '2,24p' "$0" >&2; exit 0 ;;
+    -h | --help) sed -n '2,29p' "$0" >&2; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -51,7 +56,7 @@ for tool in oci curl python3 qemu-img; do
   command -v "$tool" >/dev/null || die "$tool not found"
 done
 
-# Defaults come from the module's vars.tf, so the image matches the config.
+# Fallbacks from the module's vars.tf, so the image matches the default config.
 VARS="$SCRIPT_DIR/../vars.tf"
 if [[ -z "$VERSION" ]]; then
   VERSION=$(awk '/variable "talos_version"/,/^}/' "$VARS" | sed -n 's/.*default *= *"\(v[0-9.]*\)".*/\1/p')

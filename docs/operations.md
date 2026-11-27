@@ -11,7 +11,9 @@ GITOPS_HTTPS_USERNAME=you GITOPS_HTTPS_TOKEN=... \
 1. `import-image.sh` registers the schematic with the Image Factory, downloads
    `oracle-arm64.qcow2`, rewrites it with an 8 KiB cluster size, imports it with UEFI_64
    firmware and A1.Flex compatibility, and prints the image OCID. `deploy.sh` records it in
-   `talos-image.auto.tfvars`.
+   `talos-image.auto.tfvars`. If your root module sets `talos_version` or `talos_extensions`,
+   export the same values as `TALOS_VERSION` / `TALOS_EXTENSIONS`; otherwise the image follows
+   the module's defaults.
 2. `tofu apply` creates the network, load balancers, Bastion, bucket and nodes.
 3. Once every node runs, the custom image is deleted.
 4. `tunnel.sh up` opens Bastion port forwards to the internal load balancer.
