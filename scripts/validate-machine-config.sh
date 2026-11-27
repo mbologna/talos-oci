@@ -21,7 +21,7 @@ values = {
     "ephemeral_max_size": "24GiB",
 }
 lists = {"talos_api_roles": ["os:etcd:backup", "os:admin"],
-         "talos_api_namespaces": ["talos-backup", "tuppr-system"]}
+         "talos_api_namespaces": ["talos-backup", "system-upgrade"]}
 text = open(src).read()
 for name, items in lists.items():
     text = re.sub(r"%\{ for \w+ in " + name + r" ~\}\n(\s*- )\$\{\w+\}\n%\{ endfor ~\}\n",
