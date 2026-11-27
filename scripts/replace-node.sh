@@ -39,7 +39,11 @@ tf apply -input=false -auto-approve -var "image_id=$IMAGE_ID" \
   -replace="${MODULE}.oci_core_instance.node[\"${NODE}\"]"
 
 INSTANCE=$(tf output -json node_instance_ids | python3 -c 'import json,sys; print(json.load(sys.stdin)[sys.argv[1]])' "$NODE")
-oci compute instance get --instance-id "$INSTANCE" --wait-for-state RUNNING --max-wait-seconds 1200 >/dev/null
+# `instance get` has no --wait-for-state (only the action commands do).
+for _ in $(seq 1 120); do
+  [[ "$(oci compute instance get --instance-id "$INSTANCE" --query 'data."lifecycle-state"' --raw-output)" == RUNNING ]] && break
+  sleep 10
+done
 oci compute image delete --image-id "$IMAGE_ID" --force >/dev/null
 log "image deleted; waiting for $NODE ($IP) to rejoin"
 

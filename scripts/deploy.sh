@@ -50,7 +50,11 @@ log "$CLUSTER nodes created"
 # ── 3. delete the image ───────────────────────────────────────────────────────
 if [[ "${KEEP_IMAGE:-false}" != true ]]; then
   for id in $(tf output -json node_instance_ids | python3 -c 'import json,sys; print(" ".join(json.load(sys.stdin).values()))'); do
-    oci compute instance get --instance-id "$id" --wait-for-state RUNNING --max-wait-seconds 1200 >/dev/null
+    # `instance get` has no --wait-for-state (only the action commands do).
+    for _ in $(seq 1 120); do
+      [[ "$(oci compute instance get --instance-id "$id" --query 'data."lifecycle-state"' --raw-output)" == RUNNING ]] && break
+      sleep 10
+    done
   done
   oci compute image delete --image-id "$IMAGE_ID" --force >/dev/null
   log "custom image deleted"
