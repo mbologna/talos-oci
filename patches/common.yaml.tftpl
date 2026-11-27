@@ -29,9 +29,12 @@ nodeIP:
     - ${private_cidr}
 labels:
   node-role.kubernetes.io/control-plane: ""
-# Every node is a control plane, so the control-plane taint is dropped:
-# workloads schedule on all three.
-taints: {}
+# Every node is a control plane, so the control-plane taint Talos generates is
+# deleted: workloads schedule on all three. (An empty map would merge into the
+# generated one and keep the taint.)
+taints:
+  node-role.kubernetes.io/control-plane:
+    $patch: delete
 ---
 apiVersion: v1alpha1
 kind: KubeletConfig

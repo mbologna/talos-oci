@@ -40,7 +40,7 @@ render "$PATCHES/node.yaml.tftpl" "$TMP/node.yaml"
 talosctl gen config hotel https://10.0.1.5:6443 \
   --talos-version "${TALOS_VERSION%.*}" --kubernetes-version "$K8S_VERSION" \
   --output-types controlplane --with-docs=false --with-examples=false \
-  --config-patch "@$TMP/common.yaml" --config-patch "@$TMP/node.yaml" \
+  --config-patch-control-plane "@$TMP/common.yaml" --config-patch-control-plane "@$TMP/node.yaml" \
   -o "$TMP/controlplane.yaml" >/dev/null
 talosctl validate --config "$TMP/controlplane.yaml" --mode cloud
 size=$(wc -c < "$TMP/controlplane.yaml" | tr -d ' ')
