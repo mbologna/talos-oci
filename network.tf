@@ -83,6 +83,30 @@ resource "oci_core_security_list" "empty" {
   freeform_tags  = local.common_tags
 }
 
+# The private subnet's list adds one thing NSGs can't: the Bastion endpoint
+# takes no NSG, so without this its port forwards to the internal load balancer
+# have no egress (the session opens, the TCP connection goes nowhere).
+# Stateful: the replies come back on their own.
+resource "oci_core_security_list" "private" {
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.cluster_name}-private-sl"
+  freeform_tags  = local.common_tags
+
+  dynamic "egress_security_rules" {
+    for_each = [6443, 50000]
+    content {
+      description = "Bastion port forwards to the internal load balancer (${egress_security_rules.value})"
+      destination = var.private_subnet_cidr
+      protocol    = "6"
+      tcp_options {
+        min = egress_security_rules.value
+        max = egress_security_rules.value
+      }
+    }
+  }
+}
+
 resource "oci_core_subnet" "public" {
   compartment_id    = var.compartment_ocid
   vcn_id            = oci_core_vcn.this.id
@@ -101,7 +125,7 @@ resource "oci_core_subnet" "private" {
   display_name               = "${var.cluster_name}-private"
   dns_label                  = "private"
   route_table_id             = oci_core_route_table.private.id
-  security_list_ids          = [oci_core_security_list.empty.id]
+  security_list_ids          = [oci_core_security_list.private.id]
   prohibit_public_ip_on_vnic = true
   freeform_tags              = local.common_tags
 }
