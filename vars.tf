@@ -157,6 +157,12 @@ variable "talos_api_access_namespaces" {
   default     = ["talos-backup", "system-upgrade"]
 }
 
+variable "block_pod_metadata_access" {
+  type        = bool
+  description = "Reject pod traffic to the instance metadata service (169.254.169.254) on every node with a policy-routing rule, closing the start-up window before NetworkPolicies apply to a new pod. Pods then can't use the instance principal."
+  default     = true
+}
+
 # ── Network ───────────────────────────────────────────────────────────────────
 
 variable "vcn_cidr" {
@@ -236,10 +242,15 @@ variable "enable_boot_volume_backups" {
   default     = true
 }
 
-variable "instance_principal_backup_read" {
-  type        = bool
-  description = "Let the nodes' instance principal list the backups bucket (a dynamic group and a read-only policy), for an in-cluster backup freshness check. Needs IAM rights in the tenancy root."
-  default     = false
+variable "etcd_backup_retention_days" {
+  type        = number
+  description = "Days the backups bucket keeps objects under etcd/ (talos-backup uploads snapshots but never prunes them)."
+  default     = 14
+
+  validation {
+    condition     = var.etcd_backup_retention_days >= 1
+    error_message = "Keep etcd snapshots for at least one day."
+  }
 }
 
 variable "alert_email" {
@@ -257,6 +268,12 @@ variable "uptime_urls" {
     condition     = length(var.uptime_urls) <= 1
     error_message = "The free APM tier allows 10 synthetic runs an hour: one URL every 10 minutes."
   }
+}
+
+variable "uptime_vantage_point" {
+  type        = string
+  description = "APM public vantage point of the uptime check (e.g. OraclePublic-us-phoenix-1). null takes the first one OCI lists."
+  default     = null
 }
 
 # ── Always Free guardrails ────────────────────────────────────────────────────

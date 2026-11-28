@@ -32,15 +32,15 @@ lb.tf             internal flexible LB: 6443 and 50000 to every node
 nlb.tf            public NLB: 80/443 to the ingress NodePorts
 compute.tf        one oci_core_instance per node (fixed IP, user_data, IMDSv2 only)
 talos.tf          Image Factory schematic, machine secrets, machine configs, talosconfig
-objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days)
+objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days, etcd/ expired after etcd_backup_retention_days)
 backup.tf         weekly boot-volume backups
-iam.tf            Object Storage service grant for the lifecycle rule; optional dynamic group + read-only policy on the backups bucket
+iam.tf            Object Storage service grant for the lifecycle rule
 monitoring.tf     ONS topic, alarms, APM free-tier synthetic monitor (alert_email)
 bastion.tf        OCI Bastion for the port forwards
 checks.tf         free-allowance and user_data size checks
 output.tf         outputs
 patches/          machine-config patches (Talos 1.14 multi-document format)
-scripts/          import-image, deploy, tunnel, bootstrap-argocd, replace-node, validate-machine-config
+scripts/          import-image, deploy, tunnel, bootstrap-argocd, replace-node, apply-config, validate-machine-config
 example/          root module used by CI and as a starting point
 docs/             design.md, operations.md
 ```
@@ -52,7 +52,10 @@ docs/             design.md, operations.md
   config has no extra mounts: Longhorn uses the `longhorn` user volume at `/var/mnt/longhorn`,
   which Talos mounts into the kubelet.
 - Run `scripts/validate-machine-config.sh` (needs `talosctl`) after changing `patches/`; CI runs
-  it too.
+  it too. Running nodes get a changed config only through `scripts/apply-config.sh`.
+- Pods must never reach `169.254.169.254` (user_data holds the machine secrets): keep the
+  `RoutingRuleConfig` behind `block_pod_metadata_access`, and don't add features that need the
+  instance principal from a pod.
 
 ## Checks before pushing
 

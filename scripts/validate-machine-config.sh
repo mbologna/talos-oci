@@ -27,6 +27,7 @@ text = open(src).read()
 for name, items in lists.items():
     text = re.sub(r"%\{ for \w+ in " + name + r" ~\}\n(\s*- )\$\{\w+\}\n%\{ endfor ~\}\n",
                   lambda m: "".join(f"{m.group(1)}{i}\n" for i in items), text)
+text = re.sub(r"%\{ (if \w+|endif) ~\}\n", "", text)
 for key, val in values.items():
     text = text.replace("${" + key + "}", val)
 leftover = re.findall(r"\$\{[^}]+\}|%\{", text)

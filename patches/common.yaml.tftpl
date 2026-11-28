@@ -66,6 +66,22 @@ backendPort: 4789
 # NetworkPolicy enforcement (kube-network-policies, nftables): infra's
 # namespaces are default-deny.
 kubeNetworkPoliciesEnabled: true
+%{ if block_pod_metadata ~}
+---
+# Pods never reach the instance metadata service: it hands out the node's
+# instance-principal identity and the user_data (this machine config with
+# its secrets). NetworkPolicies already deny it, but kube-network-policies
+# only knows a pod's IP a moment after the pod starts. Policy routing sees
+# the pod's own address before flannel masquerades it, so this rule closes
+# that window; the node itself (NTP, Talos's metadata reads) and host-network
+# pods are unaffected.
+apiVersion: v1alpha1
+kind: RoutingRuleConfig
+name: "1000"
+src: ${pod_cidr}
+dst: 169.254.169.254/32
+action: prohibit
+%{ endif ~}
 ---
 apiVersion: v1alpha1
 kind: TimeSyncConfig

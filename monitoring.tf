@@ -93,7 +93,7 @@ resource "oci_apm_synthetics_monitor" "uptime" {
   freeform_tags              = local.common_tags
 
   vantage_points {
-    name = data.oci_apm_synthetics_public_vantage_points.this[0].public_vantage_point_collection[0].items[0].name
+    name = coalesce(var.uptime_vantage_point, data.oci_apm_synthetics_public_vantage_points.this[0].public_vantage_point_collection[0].items[0].name)
   }
 
   configuration {
