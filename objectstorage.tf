@@ -18,7 +18,8 @@ resource "oci_objectstorage_bucket" "backups" {
 
 # Versioning protects against accidental deletes; noncurrent versions are
 # purged after 2 days so pruned backups stop counting against the free
-# Object Storage allowance.
+# Object Storage allowance, and etcd snapshots expire after
+# etcd_backup_retention_days. Longhorn prunes its own backups.
 resource "oci_objectstorage_object_lifecycle_policy" "backups" {
   namespace = data.oci_objectstorage_namespace.this.namespace
   bucket    = oci_objectstorage_bucket.backups.name
@@ -34,5 +35,19 @@ resource "oci_objectstorage_object_lifecycle_policy" "backups" {
     target      = "previous-object-versions"
     time_amount = 2
     time_unit   = "DAYS"
+  }
+
+  # talos-backup uploads a snapshot per run and never deletes one.
+  rules {
+    name        = "expire-etcd-snapshots"
+    action      = "DELETE"
+    is_enabled  = true
+    target      = "objects"
+    time_amount = var.etcd_backup_retention_days
+    time_unit   = "DAYS"
+
+    object_name_filter {
+      inclusion_prefixes = ["etcd/"]
+    }
   }
 }

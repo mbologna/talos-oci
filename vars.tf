@@ -242,6 +242,17 @@ variable "enable_boot_volume_backups" {
   default     = true
 }
 
+variable "etcd_backup_retention_days" {
+  type        = number
+  description = "Days the backups bucket keeps objects under etcd/ (talos-backup uploads snapshots but never prunes them)."
+  default     = 14
+
+  validation {
+    condition     = var.etcd_backup_retention_days >= 1
+    error_message = "Keep etcd snapshots for at least one day."
+  }
+}
+
 variable "alert_email" {
   type        = string
   description = "Email for OCI Monitoring alarms (instance down, unhealthy NLB backends, failing uptime checks). null skips monitoring."

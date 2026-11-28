@@ -32,7 +32,7 @@ lb.tf             internal flexible LB: 6443 and 50000 to every node
 nlb.tf            public NLB: 80/443 to the ingress NodePorts
 compute.tf        one oci_core_instance per node (fixed IP, user_data, IMDSv2 only)
 talos.tf          Image Factory schematic, machine secrets, machine configs, talosconfig
-objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days)
+objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days, etcd/ expired after etcd_backup_retention_days)
 backup.tf         weekly boot-volume backups
 iam.tf            Object Storage service grant for the lifecycle rule
 monitoring.tf     ONS topic, alarms, APM free-tier synthetic monitor (alert_email)

@@ -57,8 +57,9 @@ Running clusters are upgraded in-cluster, not by Terraform: `talos_version` and
 
 - **etcd:** talos-backup, from your GitOps repository, to `<cluster>-backups/etcd/`
   (S3 endpoint `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com`, a
-  bucket-scoped Customer Secret Key). Restore: `talosctl bootstrap --recover-from <snapshot>`
-  on a fresh first node.
+  bucket-scoped Customer Secret Key). talos-backup never deletes a snapshot: the bucket's
+  lifecycle rule expires `etcd/` objects after `etcd_backup_retention_days` (14). Restore:
+  `talosctl bootstrap --recover-from <snapshot>` on a fresh first node.
 - **Longhorn:** a BackupTarget pointing at `s3://<cluster>-backups@<region>/longhorn`. Set its
   `pollInterval` to a day: every poll lists the bucket, and 5-minute polling exceeds the free
   50,000 requests a month.
