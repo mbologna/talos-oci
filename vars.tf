@@ -270,6 +270,12 @@ variable "uptime_urls" {
   }
 }
 
+variable "uptime_vantage_point" {
+  type        = string
+  description = "APM public vantage point of the uptime check (e.g. OraclePublic-us-phoenix-1). null takes the first one OCI lists."
+  default     = null
+}
+
 # ── Always Free guardrails ────────────────────────────────────────────────────
 
 variable "a1_free_ocpus" {
