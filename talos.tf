@@ -45,6 +45,7 @@ data "talos_machine_configuration" "node" {
       ephemeral_max_size   = var.ephemeral_max_size
       talos_api_roles      = var.talos_api_access_roles
       talos_api_namespaces = var.talos_api_access_namespaces
+      block_pod_metadata   = var.block_pod_metadata_access
     }),
     templatefile("${path.module}/patches/node.yaml.tftpl", {
       hostname = each.key

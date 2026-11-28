@@ -61,5 +61,8 @@ If it doesn't, rebuild as one 4 / 24 node, or as one control plane plus one work
 - Pods use 10.244.0.0/16 and services 10.96.0.0/12 (`pod_cidr`, `service_cidr`; set k3s's
   10.42.0.0/16 and 10.43.0.0/16 to reuse NetworkPolicies written for k3s). Keep the VCN outside
   both.
-- The instance metadata service (`169.254.169.254`) is also the VCN's DNS resolver: block
-  port 80 from pods, never 53.
+- Pods never reach the instance metadata service (`169.254.169.254`): a `RoutingRuleConfig`
+  (`block_pod_metadata_access`) rejects traffic from `pod_cidr` to it in policy routing, before
+  flannel masquerades the pod address, so it holds from a pod's first packet, unlike
+  NetworkPolicies. Pods resolve through Talos's host DNS (`169.254.116.108`); the host itself
+  still uses the metadata address for DNS and NTP.

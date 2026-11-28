@@ -34,7 +34,7 @@ compute.tf        one oci_core_instance per node (fixed IP, user_data, IMDSv2 on
 talos.tf          Image Factory schematic, machine secrets, machine configs, talosconfig
 objectstorage.tf  backups bucket (versioned, noncurrent versions purged after 2 days)
 backup.tf         weekly boot-volume backups
-iam.tf            Object Storage service grant for the lifecycle rule; optional dynamic group + read-only policy on the backups bucket
+iam.tf            Object Storage service grant for the lifecycle rule
 monitoring.tf     ONS topic, alarms, APM free-tier synthetic monitor (alert_email)
 bastion.tf        OCI Bastion for the port forwards
 checks.tf         free-allowance and user_data size checks
@@ -53,6 +53,9 @@ docs/             design.md, operations.md
   which Talos mounts into the kubelet.
 - Run `scripts/validate-machine-config.sh` (needs `talosctl`) after changing `patches/`; CI runs
   it too. Running nodes get a changed config only through `scripts/apply-config.sh`.
+- Pods must never reach `169.254.169.254` (user_data holds the machine secrets): keep the
+  `RoutingRuleConfig` behind `block_pod_metadata_access`, and don't add features that need the
+  instance principal from a pod.
 
 ## Checks before pushing
 

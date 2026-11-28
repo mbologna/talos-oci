@@ -32,17 +32,16 @@ OCI provider), which belong upstream.
 - **Machine configuration in user_data.** Talos reads its configuration, which holds the
   cluster PKI, from OCI instance metadata. Anyone who can read the instance's metadata (OCI
   IAM `read instances`, or a process that reaches `169.254.169.254:80` on a node) can read it.
-  Restrict instance read access in IAM, and keep pods away from the metadata service with
-  NetworkPolicies (the flannel CNI enforces them: `kubeNetworkPoliciesEnabled`). DNS to
-  `169.254.169.254:53` is the VCN resolver and must stay open.
+  Restrict instance read access in IAM. Pods can't reach the metadata service: a policy-routing
+  rule on every node (`block_pod_metadata_access`, default on) rejects traffic from the pod
+  network to `169.254.169.254`, from the pod's first packet on. Host-network pods use the node's
+  address and are not covered: keep them to trusted system components. Pods resolve names
+  through Talos's host DNS (`169.254.116.108`), not the VCN resolver, so DNS is unaffected.
 - **Terraform state holds every cluster secret** (`talos_machine_secrets`). Keep it in an
   encrypted, access-controlled backend; never commit it.
 - **NetworkPolicy enforcement fails open**: if the kube-network-policies container of the
   flannel DaemonSet stops, traffic is allowed until it restarts. It also filters only pods whose
   IP it has already added to its per-node set: a new pod's first second or so of traffic is not
-  filtered, so a pod built to read the metadata service at start-up can reach it (measured on
-  Talos 1.14.7). Closing that needs a node-level drop of pod traffic to `169.254.169.254`, which
-  in turn means no pod may rely on the instance principal (`instance_principal_backup_read`).
-- **Instance principal (opt-in, `instance_principal_backup_read`)**: the nodes may list the
-  backups bucket. Any process that reaches the metadata service can use that identity, so keep
-  pods away from `169.254.169.254:80` except the backup check that needs it.
+  filtered (measured on Talos 1.14.7; Talos's flannel DaemonSet doesn't mount the NRI socket
+  that would let it learn the IP before the pod starts). The metadata service is closed by the
+  routing rule above regardless; keep that window in mind for other destinations.

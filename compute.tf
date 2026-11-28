@@ -32,7 +32,8 @@ resource "oci_core_instance" "node" {
 
   # Talos reads its machine configuration from user_data at first boot. It
   # holds the cluster PKI: only principals that can read instance metadata see
-  # it, and infra's NetworkPolicies keep pods away from 169.254.169.254:80.
+  # it, and a routing rule keeps pods away from 169.254.169.254
+  # (block_pod_metadata_access).
   metadata = {
     user_data = base64encode(data.talos_machine_configuration.node[each.key].machine_configuration)
   }
