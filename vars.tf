@@ -272,7 +272,7 @@ variable "uptime_urls" {
 
 variable "uptime_vantage_point" {
   type        = string
-  description = "APM public vantage point of the uptime check (e.g. OraclePublic-us-phoenix-1). null takes the first one OCI lists."
+  description = "APM public vantage point of the uptime check (e.g. OraclePublic-us-sanjose-1). null takes the first one OCI lists. OraclePublicExternal-* points count several runs each against the free tier's 10 an hour and are rejected."
   default     = null
 }
 
