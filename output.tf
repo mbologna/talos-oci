@@ -9,6 +9,12 @@ output "talosconfig" {
   sensitive   = true
 }
 
+output "machine_configurations" {
+  description = "Rendered machine configuration of each node. New nodes read it from user_data; scripts/apply-config.sh applies it to running ones."
+  value       = { for name, cfg in data.talos_machine_configuration.node : name => cfg.machine_configuration }
+  sensitive   = true
+}
+
 output "node_private_ips" {
   description = "Fixed private IP of each node."
   value       = local.node_ips

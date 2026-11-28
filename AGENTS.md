@@ -40,7 +40,7 @@ bastion.tf        OCI Bastion for the port forwards
 checks.tf         free-allowance and user_data size checks
 output.tf         outputs
 patches/          machine-config patches (Talos 1.14 multi-document format)
-scripts/          import-image, deploy, tunnel, bootstrap-argocd, replace-node, validate-machine-config
+scripts/          import-image, deploy, tunnel, bootstrap-argocd, replace-node, apply-config, validate-machine-config
 example/          root module used by CI and as a starting point
 docs/             design.md, operations.md
 ```
@@ -52,7 +52,7 @@ docs/             design.md, operations.md
   config has no extra mounts: Longhorn uses the `longhorn` user volume at `/var/mnt/longhorn`,
   which Talos mounts into the kubelet.
 - Run `scripts/validate-machine-config.sh` (needs `talosctl`) after changing `patches/`; CI runs
-  it too.
+  it too. Running nodes get a changed config only through `scripts/apply-config.sh`.
 
 ## Checks before pushing
 
