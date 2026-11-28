@@ -65,6 +65,9 @@ for node in "${NODES[@]}"; do
 
   log "$node ($ip): applying (mode $MODE)"
   talosctl --nodes "$ip" apply-config --file "$TMP/$node.yaml" --mode "$MODE"
-  talosctl --nodes "$ip" health --wait-timeout 10m >/dev/null
+  # Applying can restart the node's control-plane pods: wait until the
+  # cluster is healthy again before the next node. Quiet unless it fails.
+  talosctl --nodes "$ip" health --wait-timeout 10m > "$TMP/health.log" 2>&1 \
+    || { cat "$TMP/health.log" >&2; die "$node: cluster not healthy after the apply"; }
   log "$node healthy"
 done
